@@ -1,3 +1,12 @@
+# ==============================================================================
+# Indian Folk Art Restoration AI Pipeline
+# ----------------------------------------
+# Author / Lead Researcher: Rajnish Singh
+# Institution: Computer Science & Engineering
+# Environment: PyTorch / Mac & Linux
+# Description: Custom implementation for Madhubani, Warli, and Pattachitra Restoration
+# ==============================================================================
+
 """
 models/lama.py
 --------------
@@ -146,8 +155,7 @@ class AttentionGate(nn.Module):
 
     def __init__(self, F_g: int, F_l: int, F_int: int):
         """
-        Parameters
-        ----------
+        Args:
         F_g   : number of channels in gating signal (coarser decoder layer)
         F_l   : number of channels in skip connection (encoder layer)
         F_int : number of intermediate channels
@@ -193,8 +201,7 @@ class Generator(nn.Module):
 
     def __init__(self, base_ch: int = 64, n_ffc: int = 4, use_attention: bool = True):
         """
-        Parameters
-        ----------
+        Args:
         base_ch       : base number of channels (doubles with each encoder level).
         n_ffc         : number of FFC residual blocks in the bottleneck.
         use_attention : if True, use Attention Gates on skip connections.
@@ -255,12 +262,10 @@ class Generator(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
-        Parameters
-        ----------
+        Args:
         x : (B, 4, H, W) — degraded image (3 ch) + binary mask (1 ch) in [0, 1]
 
-        Returns
-        -------
+        Returns:
         (B, 3, H, W) restored image in [0, 1]
         """
         # Encoder
@@ -345,13 +350,11 @@ class PatchDiscriminator(nn.Module):
 
     def forward(self, img: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         """
-        Parameters
-        ----------
+        Args:
         img  : (B, 3, H, W) image in [0, 1]
         mask : (B, 1, H, W) binary mask
 
-        Returns
-        -------
+        Returns:
         (B, 1, Ph, Pw) patch logits (no sigmoid — used with hinge loss)
         """
         x = torch.cat([img, mask], dim=1)   # (B, 4, H, W)

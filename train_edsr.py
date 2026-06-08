@@ -1,3 +1,12 @@
+# ==============================================================================
+# Indian Folk Art Restoration AI Pipeline
+# ----------------------------------------
+# Author / Lead Researcher: Rajnish Singh
+# Institution: Computer Science & Engineering
+# Environment: PyTorch / Mac & Linux
+# Description: Custom implementation for Madhubani, Warli, and Pattachitra Restoration
+# ==============================================================================
+
 """
 train_edsr.py
 -------------

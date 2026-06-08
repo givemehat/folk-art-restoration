@@ -1,3 +1,12 @@
+# ==============================================================================
+# Indian Folk Art Restoration AI Pipeline
+# ----------------------------------------
+# Author / Lead Researcher: Rajnish Singh
+# Institution: Computer Science & Engineering
+# Environment: PyTorch / Mac & Linux
+# Description: Custom implementation for Madhubani, Warli, and Pattachitra Restoration
+# ==============================================================================
+
 """
 models/losses.py
 ----------------
@@ -67,12 +76,10 @@ class PerceptualLoss(nn.Module):
 
     def forward(self, pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         """
-        Parameters
-        ----------
+        Args:
         pred, target : (B, 3, H, W) float tensors in [0, 1]
 
-        Returns
-        -------
+        Returns:
         Scalar loss tensor.
         """
         pred_n   = self._normalise(pred.clamp(0, 1))
@@ -115,12 +122,10 @@ class StyleLoss(nn.Module):
 
     def forward(self, pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         """
-        Parameters
-        ----------
+        Args:
         pred, target : (B, 3, H, W) float tensors in [0, 1]
 
-        Returns
-        -------
+        Returns:
         Scalar loss tensor.
         """
         pred_n   = self.perceptual._normalise(pred.clamp(0, 1))
@@ -173,8 +178,7 @@ class ReconstructionLoss(nn.Module):
         self, pred: torch.Tensor, target: torch.Tensor
     ) -> tuple[torch.Tensor, dict]:
         """
-        Returns
-        -------
+        Returns:
         total_loss : scalar tensor
         breakdown  : dict {'l1': float, 'perceptual': float, 'style': float} for logging
         """
@@ -226,14 +230,12 @@ class AdversarialLoss(nn.Module):
         mode: str = "discriminator",
     ) -> torch.Tensor:
         """
-        Parameters
-        ----------
+        Args:
         real_logits : discriminator output on real images (needed for 'discriminator' mode)
         fake_logits : discriminator output on generated images
         mode        : 'discriminator' or 'generator'
 
-        Returns
-        -------
+        Returns:
         Scalar loss tensor.
         """
         if mode == "discriminator":

@@ -1,3 +1,12 @@
+# ==============================================================================
+# Indian Folk Art Restoration AI Pipeline
+# ----------------------------------------
+# Author / Lead Researcher: Rajnish Singh
+# Institution: Computer Science & Engineering
+# Environment: PyTorch / Mac & Linux
+# Description: Custom implementation for Madhubani, Warli, and Pattachitra Restoration
+# ==============================================================================
+
 """
 models/edsr.py
 --------------
@@ -31,8 +40,7 @@ class ResBlock(nn.Module):
 
     def __init__(self, num_channels: int = 64, res_scale: float = 0.1):
         """
-        Parameters
-        ----------
+        Args:
         num_channels : number of feature channels.
         res_scale    : multiply residual branch by this scalar (helps
                        convergence when stacking many blocks).
@@ -117,12 +125,10 @@ class EDSR(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
-        Parameters
-        ----------
+        Args:
         x : (B, 3, H, W) low-resolution image in [0, 1].
 
-        Returns
-        -------
+        Returns:
         (B, 3, H*scale, W*scale) super-resolved image clamped to [0, 1].
         """
         # Head
