@@ -1,0 +1,23 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.metadata.json
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+
+# Large Datasets and Checkpoints
+data/
+checkpoints/
+
+# macOS system files
+.DS_Store
+
+# Temporary outputs & user uploads
+demo_outputs/
+static/uploads/*
+!static/uploads/.gitkeep
