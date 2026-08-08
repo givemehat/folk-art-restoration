@@ -1,0 +1,34 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Find root directory
+        id: root_dir
+        run: |
+          # Find directory containing index.html
+          INDEX_PATH=$(find . -name "index.html" -not -path "*/node_modules/*" | head -n 1)
+          if [ -n "$INDEX_PATH" ]; then
+            DIR_PATH=$(dirname "$INDEX_PATH")
+            echo "dir=$DIR_PATH" >> $GITHUB_OUTPUT
+          else
+            echo "dir=." >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ${{ steps.root_dir.outputs.dir }}
