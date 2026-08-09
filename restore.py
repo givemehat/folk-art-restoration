@@ -49,21 +49,21 @@ from models.edsr import EDSR
 from models.lama import Generator
 from utils.metrics import compute_psnr, compute_ssim, compute_lpips
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def load_image(path: str, size: int = 256) -> torch.Tensor:
     """Load an image from disk and convert to (3, size, size) float [0,1] tensor."""
     img = Image.open(path).convert("RGB").resize((size, size), Image.LANCZOS)
-    return TF.to_tensor(img)            # (3, H, W)  [0, 1]
+    return TF.to_tensor(img)  # (3, H, W)  [0, 1]
 
 
 def load_mask(path: str, size: int = 256) -> torch.Tensor:
     """Load a grayscale mask PNG → (1, H, W) binary float tensor."""
     m = Image.open(path).convert("L").resize((size, size), Image.NEAREST)
-    t = TF.to_tensor(m)                 # (1, H, W)  [0, 1]
+    t = TF.to_tensor(m)  # (1, H, W)  [0, 1]
     return (t > 0.5).float()
 
 
@@ -87,15 +87,20 @@ def auto_mask(damaged_tensor: torch.Tensor, threshold: float = 0.90) -> torch.Te
 
     # Near-grey (low saturation): max - min channel < 0.05 AND brightness > 0.85
     brightness = damaged_tensor.mean(dim=0, keepdim=True)
-    saturation = damaged_tensor.max(dim=0, keepdim=True).values - \
-                 damaged_tensor.min(dim=0, keepdim=True).values
+    saturation = (
+        damaged_tensor.max(dim=0, keepdim=True).values
+        - damaged_tensor.min(dim=0, keepdim=True).values
+    )
     grey_damaged = ((saturation < 0.05) & (brightness > 0.85)).float()
 
     mask = ((bright + grey_damaged) > 0).float()
 
     # Dilate slightly with a 5×5 max-pool to cover damage borders
     import torch.nn.functional as F
-    mask = F.max_pool2d(mask.unsqueeze(0), kernel_size=5, stride=1, padding=2).squeeze(0)
+
+    mask = F.max_pool2d(mask.unsqueeze(0), kernel_size=5, stride=1, padding=2).squeeze(
+        0
+    )
     return mask
 
 
@@ -111,23 +116,40 @@ def save_image(tensor: torch.Tensor, path: str) -> None:
 # Argument parsing
 # ---------------------------------------------------------------------------
 
+
 def get_args():
-    p = argparse.ArgumentParser(description="Folk Art Restoration — single-image inference")
-    p.add_argument("--input",        type=str, required=True,  help="Path to damaged input image")
-    p.add_argument("--output",       type=str, required=True,  help="Path for restored output PNG")
-    p.add_argument("--ground_truth", type=str, default=None,   help="Optional: clean reference for metrics")
-    p.add_argument("--mask",         type=str, default=None,   help="Optional: binary mask PNG (255=damaged)")
-    p.add_argument("--edsr_ckpt",    type=str, default="./checkpoints/edsr/edsr_best.pth")
-    p.add_argument("--lama_ckpt",    type=str, default="./checkpoints/lama/lama_best.pth")
-    p.add_argument("--scale",        type=int, default=2, choices=[2, 4])
-    p.add_argument("--no_edsr",      action="store_true", help="Skip EDSR; use LaMa only")
-    p.add_argument("--size",         type=int, default=256, help="Spatial resolution to work at")
+    p = argparse.ArgumentParser(
+        description="Folk Art Restoration — single-image inference"
+    )
+    p.add_argument(
+        "--input", type=str, required=True, help="Path to damaged input image"
+    )
+    p.add_argument(
+        "--output", type=str, required=True, help="Path for restored output PNG"
+    )
+    p.add_argument(
+        "--ground_truth",
+        type=str,
+        default=None,
+        help="Optional: clean reference for metrics",
+    )
+    p.add_argument(
+        "--mask", type=str, default=None, help="Optional: binary mask PNG (255=damaged)"
+    )
+    p.add_argument("--edsr_ckpt", type=str, default="./checkpoints/edsr/edsr_best.pth")
+    p.add_argument("--lama_ckpt", type=str, default="./checkpoints/lama/lama_best.pth")
+    p.add_argument("--scale", type=int, default=2, choices=[2, 4])
+    p.add_argument("--no_edsr", action="store_true", help="Skip EDSR; use LaMa only")
+    p.add_argument(
+        "--size", type=int, default=256, help="Spatial resolution to work at"
+    )
     return p.parse_args()
 
 
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+
 
 def main():
     args = get_args()
@@ -140,7 +162,7 @@ def main():
         sys.exit(1)
 
     print(f"Loading input image: {args.input}")
-    damaged = load_image(args.input, size=args.size)   # (3, H, W)
+    damaged = load_image(args.input, size=args.size)  # (3, H, W)
 
     if args.mask:
         print(f"Loading supplied mask: {args.mask}")
@@ -167,7 +189,9 @@ def main():
         print("Loading EDSR …")
         edsr_ckpt_path = Path(args.edsr_ckpt)
         if not edsr_ckpt_path.exists():
-            print(f"WARNING: EDSR checkpoint not found ({edsr_ckpt_path}). Falling back to LaMa-only.")
+            print(
+                f"WARNING: EDSR checkpoint not found ({edsr_ckpt_path}). Falling back to LaMa-only."
+            )
             args.no_edsr = True
         else:
             edsr = EDSR(scale=args.scale).to(device).eval()
@@ -184,7 +208,7 @@ def main():
                 interpolation=T.InterpolationMode.BICUBIC,
             )
             lr = resize_tf(damaged).unsqueeze(0).to(device)  # (1, 3, H/s, W/s)
-            sr = edsr(lr).squeeze(0).cpu()                   # (3, H, W)
+            sr = edsr(lr).squeeze(0).cpu()  # (3, H, W)
             stage1_label = f"EDSR (×{args.scale})"
         else:
             sr = damaged
@@ -192,7 +216,7 @@ def main():
 
         # Stage 2: LaMa inpainting
         lama_inp = torch.cat([sr, mask], dim=0).unsqueeze(0).to(device)  # (1,4,H,W)
-        restored = gen(lama_inp).squeeze(0).cpu().clamp(0, 1)           # (3, H, W)
+        restored = gen(lama_inp).squeeze(0).cpu().clamp(0, 1)  # (3, H, W)
 
     print(f"Pipeline: {stage1_label} → LaMa Inpainting")
 

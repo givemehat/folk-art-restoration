@@ -27,10 +27,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-
 # ---------------------------------------------------------------------------
 # Building blocks
 # ---------------------------------------------------------------------------
+
 
 class ResBlock(nn.Module):
     """
@@ -73,7 +73,7 @@ class UpsampleBlock(nn.Module):
         for _ in range(scale // 2):
             layers += [
                 nn.Conv2d(num_channels, num_channels * 4, kernel_size=3, padding=1),
-                nn.PixelShuffle(2),           # channels ÷ 4, spatial × 2
+                nn.PixelShuffle(2),  # channels ÷ 4, spatial × 2
                 nn.ReLU(inplace=True),
             ]
         self.up = nn.Sequential(*layers)
@@ -85,6 +85,7 @@ class UpsampleBlock(nn.Module):
 # ---------------------------------------------------------------------------
 # Full EDSR model
 # ---------------------------------------------------------------------------
+
 
 class EDSR(nn.Module):
     """
@@ -182,7 +183,7 @@ class FolkArtSRDataset(Dataset):
         super().__init__()
         self.scale = scale
         root = Path(root)
-        self.clean_dir   = root / "clean"   / split
+        self.clean_dir = root / "clean" / split
         self.damaged_dir = root / "damaged" / split
 
         if not self.clean_dir.exists():
@@ -196,15 +197,25 @@ class FolkArtSRDataset(Dataset):
         self.lr_size = self.hr_size // scale
 
         # High-resolution transform: normalise to [0,1]
-        self.hr_tf = T.Compose([
-            T.Resize((self.hr_size, self.hr_size), interpolation=T.InterpolationMode.LANCZOS),
-            T.ToTensor(),
-        ])
+        self.hr_tf = T.Compose(
+            [
+                T.Resize(
+                    (self.hr_size, self.hr_size),
+                    interpolation=T.InterpolationMode.LANCZOS,
+                ),
+                T.ToTensor(),
+            ]
+        )
         # Low-resolution: take the damaged image & resize to lr_size
-        self.lr_tf = T.Compose([
-            T.Resize((self.lr_size, self.lr_size), interpolation=T.InterpolationMode.BICUBIC),
-            T.ToTensor(),
-        ])
+        self.lr_tf = T.Compose(
+            [
+                T.Resize(
+                    (self.lr_size, self.lr_size),
+                    interpolation=T.InterpolationMode.BICUBIC,
+                ),
+                T.ToTensor(),
+            ]
+        )
 
     def __len__(self) -> int:
         return len(self.filenames)
@@ -212,10 +223,10 @@ class FolkArtSRDataset(Dataset):
     def __getitem__(self, idx: int) -> dict:
         fname = self.filenames[idx]
 
-        hr_img = Image.open(self.clean_dir   / fname).convert("RGB")
+        hr_img = Image.open(self.clean_dir / fname).convert("RGB")
         lr_img = Image.open(self.damaged_dir / fname).convert("RGB")
 
-        hr = self.hr_tf(hr_img)   # (3, 256, 256)
-        lr = self.lr_tf(lr_img)   # (3, 128, 128) for scale=2
+        hr = self.hr_tf(hr_img)  # (3, 256, 256)
+        lr = self.lr_tf(lr_img)  # (3, 128, 128) for scale=2
 
         return {"lr": lr, "hr": hr, "filename": fname}

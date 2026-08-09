@@ -30,10 +30,10 @@ from PIL import Image, ImageDraw, ImageFilter, ImageEnhance
 from pathlib import Path
 from tqdm import tqdm
 
-
 # ---------------------------------------------------------------------------
 # Individual damage functions
 # ---------------------------------------------------------------------------
+
 
 def _fade(image: Image.Image) -> tuple[Image.Image, np.ndarray]:
     """
@@ -216,9 +216,7 @@ def apply_damage(
     return _apply_single(image, mode)
 
 
-def _apply_single(
-    image: Image.Image, mode: str
-) -> tuple[Image.Image, np.ndarray]:
+def _apply_single(image: Image.Image, mode: str) -> tuple[Image.Image, np.ndarray]:
     """Dispatch to the correct damage function."""
     dispatch = {
         "fade": _fade,
@@ -290,7 +288,11 @@ def create_damaged_dataset(
         for src_path in tqdm(paths, desc=f"Processing {split_name}"):
             src_path = Path(src_path)
             try:
-                img = Image.open(src_path).convert("RGB").resize((256, 256), Image.LANCZOS)
+                img = (
+                    Image.open(src_path)
+                    .convert("RGB")
+                    .resize((256, 256), Image.LANCZOS)
+                )
             except Exception as e:
                 print(f"  [SKIP] {src_path}: {e}")
                 continue
@@ -310,4 +312,6 @@ def create_damaged_dataset(
                 data.save(dest_path)
 
     print(f"\nDataset created at {output_dir}")
-    print(f"  Train: {len(splits['train'])}  Val: {len(splits['val'])}  Test: {len(splits['test'])}")
+    print(
+        f"  Train: {len(splits['train'])}  Val: {len(splits['val'])}  Test: {len(splits['test'])}"
+    )

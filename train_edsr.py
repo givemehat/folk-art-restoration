@@ -38,24 +38,42 @@ from models.edsr import EDSR, FolkArtSRDataset
 from models.losses import ReconstructionLoss
 from utils.metrics import compute_psnr, compute_ssim
 
-
 # ---------------------------------------------------------------------------
 # Argument parsing
 # ---------------------------------------------------------------------------
 
+
 def get_args():
     p = argparse.ArgumentParser(description="Train EDSR for folk-art super-resolution")
-    p.add_argument("--data_root",  type=str, default="./data",              help="Dataset root (output of create_damaged_dataset)")
-    p.add_argument("--ckpt_dir",   type=str, default="./checkpoints/edsr",  help="Where to save checkpoints")
-    p.add_argument("--scale",      type=int, default=2, choices=[2, 4],     help="Super-resolution scale factor")
-    p.add_argument("--epochs",     type=int, default=50)
+    p.add_argument(
+        "--data_root",
+        type=str,
+        default="./data",
+        help="Dataset root (output of create_damaged_dataset)",
+    )
+    p.add_argument(
+        "--ckpt_dir",
+        type=str,
+        default="./checkpoints/edsr",
+        help="Where to save checkpoints",
+    )
+    p.add_argument(
+        "--scale",
+        type=int,
+        default=2,
+        choices=[2, 4],
+        help="Super-resolution scale factor",
+    )
+    p.add_argument("--epochs", type=int, default=50)
     p.add_argument("--batch_size", type=int, default=16)
-    p.add_argument("--lr",         type=float, default=1e-4)
+    p.add_argument("--lr", type=float, default=1e-4)
     p.add_argument("--num_channels", type=int, default=64)
-    p.add_argument("--num_blocks",   type=int, default=16)
-    p.add_argument("--patience",   type=int, default=7,                     help="Early stopping patience (epochs)")
-    p.add_argument("--num_workers",type=int, default=2)
-    p.add_argument("--seed",       type=int, default=42)
+    p.add_argument("--num_blocks", type=int, default=16)
+    p.add_argument(
+        "--patience", type=int, default=7, help="Early stopping patience (epochs)"
+    )
+    p.add_argument("--num_workers", type=int, default=2)
+    p.add_argument("--seed", type=int, default=42)
     return p.parse_args()
 
 
@@ -63,13 +81,14 @@ def get_args():
 # Training / validation loops
 # ---------------------------------------------------------------------------
 
+
 def train_one_epoch(model, loader, optimizer, criterion, device, scaler) -> float:
     """One full training epoch. Returns mean training loss."""
     model.train()
     total_loss = 0.0
     for batch in loader:
-        lr  = batch["lr"].to(device, non_blocking=True)
-        hr  = batch["hr"].to(device, non_blocking=True)
+        lr = batch["lr"].to(device, non_blocking=True)
+        hr = batch["hr"].to(device, non_blocking=True)
 
         optimizer.zero_grad()
         with torch.cuda.amp.autocast(enabled=scaler is not None):
@@ -121,6 +140,7 @@ def validate(model, loader, criterion, device) -> tuple[float, float, float]:
 # Main
 # ---------------------------------------------------------------------------
 
+
 def main():
     args = get_args()
 
@@ -141,16 +161,23 @@ def main():
     # Datasets & DataLoaders
     # ------------------------------------------------------------------
     train_ds = FolkArtSRDataset(args.data_root, split="train", scale=args.scale)
-    val_ds   = FolkArtSRDataset(args.data_root, split="val",   scale=args.scale)
+    val_ds = FolkArtSRDataset(args.data_root, split="val", scale=args.scale)
     print(f"Train: {len(train_ds)} images   Val: {len(val_ds)} images")
 
     train_loader = DataLoader(
-        train_ds, batch_size=args.batch_size, shuffle=True,
-        num_workers=args.num_workers, pin_memory=True, drop_last=True,
+        train_ds,
+        batch_size=args.batch_size,
+        shuffle=True,
+        num_workers=args.num_workers,
+        pin_memory=True,
+        drop_last=True,
     )
     val_loader = DataLoader(
-        val_ds, batch_size=args.batch_size, shuffle=False,
-        num_workers=args.num_workers, pin_memory=True,
+        val_ds,
+        batch_size=args.batch_size,
+        shuffle=False,
+        num_workers=args.num_workers,
+        pin_memory=True,
     )
 
     # ------------------------------------------------------------------
@@ -177,7 +204,9 @@ def main():
     # ------------------------------------------------------------------
     with open(csv_path, "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["epoch", "train_loss", "val_loss", "val_psnr", "val_ssim", "lr"])
+        writer.writerow(
+            ["epoch", "train_loss", "val_loss", "val_psnr", "val_ssim", "lr"]
+        )
 
     # ------------------------------------------------------------------
     # Training loop
@@ -186,14 +215,18 @@ def main():
     patience_counter = 0
     best_ckpt_path = ckpt_dir / "edsr_best.pth"
 
-    print("\n" + "="*65)
-    print(f"{'Epoch':>6} | {'Train Loss':>10} | {'Val Loss':>10} | {'PSNR':>7} | {'SSIM':>7}")
-    print("="*65)
+    print("\n" + "=" * 65)
+    print(
+        f"{'Epoch':>6} | {'Train Loss':>10} | {'Val Loss':>10} | {'PSNR':>7} | {'SSIM':>7}"
+    )
+    print("=" * 65)
 
     for epoch in range(1, args.epochs + 1):
         t0 = time.time()
 
-        train_loss = train_one_epoch(model, train_loader, optimizer, criterion, device, scaler)
+        train_loss = train_one_epoch(
+            model, train_loader, optimizer, criterion, device, scaler
+        )
         val_loss, val_psnr, val_ssim = validate(model, val_loader, criterion, device)
         scheduler.step()
 
@@ -207,7 +240,9 @@ def main():
 
         # Log to CSV
         with open(csv_path, "a", newline="") as f:
-            csv.writer(f).writerow([epoch, train_loss, val_loss, val_psnr, val_ssim, current_lr])
+            csv.writer(f).writerow(
+                [epoch, train_loss, val_loss, val_psnr, val_ssim, current_lr]
+            )
 
         # Save best checkpoint
         if val_loss < best_val_loss:
@@ -229,7 +264,9 @@ def main():
         else:
             patience_counter += 1
             if patience_counter >= args.patience:
-                print(f"\nEarly stopping triggered after {epoch} epochs (patience={args.patience}).")
+                print(
+                    f"\nEarly stopping triggered after {epoch} epochs (patience={args.patience})."
+                )
                 break
 
         # Also save latest checkpoint every 10 epochs

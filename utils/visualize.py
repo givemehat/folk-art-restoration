@@ -21,9 +21,11 @@ from pathlib import Path
 
 import numpy as np
 import sys
+
 # Use non-interactive Agg backend only if we are running headlessly (not in a notebook/IPython environment)
 if "ipykernel" not in sys.modules:
     import matplotlib
+
     matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
@@ -33,10 +35,10 @@ from PIL import Image
 
 from utils.metrics import compute_psnr, compute_ssim
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _to_display(img) -> np.ndarray:
     """
@@ -64,6 +66,7 @@ def _to_display(img) -> np.ndarray:
 # plot_results
 # ---------------------------------------------------------------------------
 
+
 def plot_results(
     original,
     damaged,
@@ -88,8 +91,8 @@ def plot_results(
     fig_title : optional super-title for the figure.
     """
     orig_np = _to_display(original)
-    dmg_np  = _to_display(damaged)
-    rst_np  = _to_display(restored)
+    dmg_np = _to_display(damaged)
+    rst_np = _to_display(restored)
 
     # Compute quality scores (restored vs original)
     psnr = compute_psnr(orig_np, rst_np)
@@ -100,8 +103,8 @@ def plot_results(
 
     panels = [
         (orig_np, "Original (Clean)"),
-        (dmg_np,  "Damaged (Input)"),
-        (rst_np,  f"Restored (Output)\nPSNR: {psnr:.2f} dB   SSIM: {ssim:.4f}"),
+        (dmg_np, "Damaged (Input)"),
+        (rst_np, f"Restored (Output)\nPSNR: {psnr:.2f} dB   SSIM: {ssim:.4f}"),
     ]
 
     for ax, (img, title) in zip(axes, panels):
@@ -121,6 +124,7 @@ def plot_results(
 # ---------------------------------------------------------------------------
 # plot_training_curves
 # ---------------------------------------------------------------------------
+
 
 def plot_training_curves(
     csv_path: str,
@@ -162,9 +166,9 @@ def plot_training_curves(
 
     epochs = _col("epoch") or list(range(1, len(rows) + 1))
     train_loss = _col("train_loss")
-    val_loss   = _col("val_loss")
-    val_psnr   = _col("val_psnr")
-    val_ssim   = _col("val_ssim")
+    val_loss = _col("val_loss")
+    val_psnr = _col("val_psnr")
+    val_ssim = _col("val_ssim")
 
     # Decide subplot layout
     has_extra = bool(val_psnr or val_ssim)
@@ -178,9 +182,11 @@ def plot_training_curves(
     # --- Loss subplot -----------------------------------------------------
     ax = axes[0]
     if train_loss:
-        ax.plot(epochs, train_loss, label="Train Loss", color="steelblue", linewidth=1.8)
+        ax.plot(
+            epochs, train_loss, label="Train Loss", color="steelblue", linewidth=1.8
+        )
     if val_loss:
-        ax.plot(epochs, val_loss,   label="Val Loss",   color="tomato",    linewidth=1.8)
+        ax.plot(epochs, val_loss, label="Val Loss", color="tomato", linewidth=1.8)
     ax.set_xlabel("Epoch")
     ax.set_ylabel("Loss")
     ax.set_title("Loss")
@@ -191,7 +197,9 @@ def plot_training_curves(
     plot_idx = 1
     if val_psnr and plot_idx < len(axes):
         ax2 = axes[plot_idx]
-        ax2.plot(epochs[:len(val_psnr)], val_psnr, color="mediumseagreen", linewidth=1.8)
+        ax2.plot(
+            epochs[: len(val_psnr)], val_psnr, color="mediumseagreen", linewidth=1.8
+        )
         ax2.set_xlabel("Epoch")
         ax2.set_ylabel("PSNR (dB)")
         ax2.set_title("Validation PSNR")
@@ -201,7 +209,7 @@ def plot_training_curves(
     # --- SSIM subplot (optional) ------------------------------------------
     if val_ssim and plot_idx < len(axes):
         ax3 = axes[plot_idx]
-        ax3.plot(epochs[:len(val_ssim)], val_ssim, color="darkorange", linewidth=1.8)
+        ax3.plot(epochs[: len(val_ssim)], val_ssim, color="darkorange", linewidth=1.8)
         ax3.set_xlabel("Epoch")
         ax3.set_ylabel("SSIM")
         ax3.set_title("Validation SSIM")
@@ -221,6 +229,7 @@ def plot_training_curves(
 # ---------------------------------------------------------------------------
 # Quick grid of N restoration examples
 # ---------------------------------------------------------------------------
+
 
 def plot_grid(
     originals: list,
@@ -252,8 +261,8 @@ def plot_grid(
 
     for i in range(n):
         orig = _to_display(originals[i])
-        dmg  = _to_display(damaged_list[i])
-        rst  = _to_display(restored_list[i])
+        dmg = _to_display(damaged_list[i])
+        rst = _to_display(restored_list[i])
         psnr = compute_psnr(orig, rst)
         ssim = compute_ssim(orig, rst)
 

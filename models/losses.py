@@ -21,10 +21,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models
 
-
 # ---------------------------------------------------------------------------
 # Perceptual Loss (VGG19)
 # ---------------------------------------------------------------------------
+
 
 class PerceptualLoss(nn.Module):
     """
@@ -51,7 +51,7 @@ class PerceptualLoss(nn.Module):
 
     # ImageNet normalisation expected by VGG
     _MEAN = torch.tensor([0.485, 0.456, 0.406])
-    _STD  = torch.tensor([0.229, 0.224, 0.225])
+    _STD = torch.tensor([0.229, 0.224, 0.225])
 
     def __init__(self, layer_weights: dict = None, device: torch.device = None):
         super().__init__()
@@ -68,7 +68,7 @@ class PerceptualLoss(nn.Module):
 
         # Register mean/std as buffers so they move with .to(device)
         self.register_buffer("mean", self._MEAN.view(1, 3, 1, 1))
-        self.register_buffer("std",  self._STD.view(1, 3, 1, 1))
+        self.register_buffer("std", self._STD.view(1, 3, 1, 1))
 
     def _normalise(self, x: torch.Tensor) -> torch.Tensor:
         """Normalise images from [0, 1] to ImageNet statistics."""
@@ -82,7 +82,7 @@ class PerceptualLoss(nn.Module):
         Returns:
         Scalar loss tensor.
         """
-        pred_n   = self._normalise(pred.clamp(0, 1))
+        pred_n = self._normalise(pred.clamp(0, 1))
         target_n = self._normalise(target.clamp(0, 1))
 
         loss = torch.tensor(0.0, device=pred.device)
@@ -101,6 +101,7 @@ class PerceptualLoss(nn.Module):
 # ---------------------------------------------------------------------------
 # Style Consistency Loss
 # ---------------------------------------------------------------------------
+
 
 class StyleLoss(nn.Module):
     """
@@ -128,7 +129,7 @@ class StyleLoss(nn.Module):
         Returns:
         Scalar loss tensor.
         """
-        pred_n   = self.perceptual._normalise(pred.clamp(0, 1))
+        pred_n = self.perceptual._normalise(pred.clamp(0, 1))
         target_n = self.perceptual._normalise(target.clamp(0, 1))
 
         loss = torch.tensor(0.0, device=pred.device)
@@ -150,6 +151,7 @@ class StyleLoss(nn.Module):
 # Reconstruction Loss
 # ---------------------------------------------------------------------------
 
+
 class ReconstructionLoss(nn.Module):
     """
     Weighted combination of L1 pixel loss, perceptual VGG19 loss, and style loss.
@@ -165,7 +167,12 @@ class ReconstructionLoss(nn.Module):
     style_weight       : weight for the style loss term.       Default 0.0 (disabled)
     """
 
-    def __init__(self, l1_weight: float = 1.0, perceptual_weight: float = 0.1, style_weight: float = 0.0):
+    def __init__(
+        self,
+        l1_weight: float = 1.0,
+        perceptual_weight: float = 0.1,
+        style_weight: float = 0.0,
+    ):
         super().__init__()
         self.l1_weight = l1_weight
         self.perceptual_weight = perceptual_weight
@@ -198,6 +205,7 @@ class ReconstructionLoss(nn.Module):
 # ---------------------------------------------------------------------------
 # Adversarial (Hinge) Loss
 # ---------------------------------------------------------------------------
+
 
 class AdversarialLoss(nn.Module):
     """
@@ -240,7 +248,9 @@ class AdversarialLoss(nn.Module):
         """
         if mode == "discriminator":
             if real_logits is None or fake_logits is None:
-                raise ValueError("Both real_logits and fake_logits needed for discriminator loss.")
+                raise ValueError(
+                    "Both real_logits and fake_logits needed for discriminator loss."
+                )
             # Hinge: penalise if D(real) < 1  or  D(fake) > -1
             loss_real = F.relu(1.0 - real_logits).mean()
             loss_fake = F.relu(1.0 + fake_logits).mean()
@@ -253,4 +263,6 @@ class AdversarialLoss(nn.Module):
             return -fake_logits.mean()
 
         else:
-            raise ValueError(f"Unknown mode '{mode}'. Use 'discriminator' or 'generator'.")
+            raise ValueError(
+                f"Unknown mode '{mode}'. Use 'discriminator' or 'generator'."
+            )

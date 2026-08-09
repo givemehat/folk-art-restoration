@@ -25,6 +25,7 @@ from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 # lpips is installed via: pip install lpips
 try:
     import lpips as lpips_lib
+
     _LPIPS_NET = None  # lazy-loaded on first use
 except ImportError:
     lpips_lib = None
@@ -34,6 +35,7 @@ except ImportError:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _to_numpy_uint8(img) -> np.ndarray:
     """
@@ -45,12 +47,12 @@ def _to_numpy_uint8(img) -> np.ndarray:
     if isinstance(img, Tensor):
         img = img.detach().cpu()
         if img.ndim == 4:
-            img = img.squeeze(0)          # remove batch dim
+            img = img.squeeze(0)  # remove batch dim
         img = img.permute(1, 2, 0).numpy()  # C,H,W → H,W,C
 
     img = np.array(img, dtype=np.float32)
 
-    if img.max() <= 1.0 + 1e-6:          # [0, 1] range
+    if img.max() <= 1.0 + 1e-6:  # [0, 1] range
         img = (img * 255.0).clip(0, 255)
 
     return img.astype(np.uint8)
@@ -78,6 +80,7 @@ def _to_lpips_tensor(img, device: torch.device) -> Tensor:
 # ---------------------------------------------------------------------------
 # Individual metric functions
 # ---------------------------------------------------------------------------
+
 
 def compute_psnr(img1, img2) -> float:
     """
@@ -113,9 +116,7 @@ def compute_ssim(img1, img2) -> float:
     a = _to_numpy_uint8(img1)
     b = _to_numpy_uint8(img2)
     # channel_axis=2 tells skimage the colour axis position
-    return float(
-        structural_similarity(a, b, channel_axis=2, data_range=255)
-    )
+    return float(structural_similarity(a, b, channel_axis=2, data_range=255))
 
 
 def compute_lpips(img1, img2, device: torch.device = None) -> float:
@@ -154,6 +155,7 @@ def compute_lpips(img1, img2, device: torch.device = None) -> float:
 # ---------------------------------------------------------------------------
 # Batch evaluation
 # ---------------------------------------------------------------------------
+
 
 def evaluate_all(
     model,
@@ -199,7 +201,7 @@ def evaluate_all(
 
             # Per-image metrics
             for i in range(restored.size(0)):
-                pred = restored[i]   # C,H,W tensor [0,1]
+                pred = restored[i]  # C,H,W tensor [0,1]
                 gt = clean[i]
 
                 psnr_vals.append(compute_psnr(gt, pred))

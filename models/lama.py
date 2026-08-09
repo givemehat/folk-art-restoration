@@ -36,10 +36,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-
 # ==========================================================================
 # Utility layers
 # ==========================================================================
+
 
 def _norm(num_ch: int):
     """Instance normalisation used throughout both G and D."""
@@ -54,12 +54,21 @@ def _act():
 class ConvBnAct(nn.Module):
     """Conv2d → Norm → Act convenience block."""
 
-    def __init__(self, in_ch, out_ch, kernel=3, stride=1, dilation=1, pad_mode="reflect"):
+    def __init__(
+        self, in_ch, out_ch, kernel=3, stride=1, dilation=1, pad_mode="reflect"
+    ):
         super().__init__()
         pad = dilation * (kernel - 1) // 2
         self.block = nn.Sequential(
-            nn.Conv2d(in_ch, out_ch, kernel, stride=stride, padding=pad,
-                      dilation=dilation, padding_mode=pad_mode),
+            nn.Conv2d(
+                in_ch,
+                out_ch,
+                kernel,
+                stride=stride,
+                padding=pad,
+                dilation=dilation,
+                padding_mode=pad_mode,
+            ),
             _norm(out_ch),
             _act(),
         )
@@ -72,6 +81,7 @@ class ConvBnAct(nn.Module):
 # Fast Fourier Convolution (FFC)
 # ==========================================================================
 
+
 class SpectralTransform(nn.Module):
     """
     Applies a 1×1 convolution in the frequency domain (via rFFT2d).
@@ -81,15 +91,15 @@ class SpectralTransform(nn.Module):
     def __init__(self, in_ch: int, out_ch: int):
         super().__init__()
         self.conv = nn.Conv2d(in_ch * 2, out_ch * 2, kernel_size=1)
-        self.bn   = _norm(out_ch * 2)
-        self.act  = nn.ReLU(inplace=True)
+        self.bn = _norm(out_ch * 2)
+        self.act = nn.ReLU(inplace=True)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         B, C, H, W = x.shape
         # Real-valued FFT along spatial dims
-        fft = torch.fft.rfft2(x, norm="ortho")            # (B, C, H, W//2+1) complex
+        fft = torch.fft.rfft2(x, norm="ortho")  # (B, C, H, W//2+1) complex
         # Decompose into real and imaginary parts and stack along channel dim
-        fft_r = torch.view_as_real(fft)                   # (B, C, H, W//2+1, 2)
+        fft_r = torch.view_as_real(fft)  # (B, C, H, W//2+1, 2)
         fft_cat = fft_r.permute(0, 1, 4, 2, 3).reshape(  # (B, 2C, H, W//2+1)
             B, C * 2, H, fft.shape[-1]
         )
@@ -117,7 +127,8 @@ class FFCResBlock(nn.Module):
         if self.l > 0:
             self.local_conv = nn.Sequential(
                 nn.Conv2d(self.l, self.l, 3, padding=1, padding_mode="reflect"),
-                _norm(self.l), _act(),
+                _norm(self.l),
+                _act(),
                 nn.Conv2d(self.l, self.l, 3, padding=1, padding_mode="reflect"),
                 _norm(self.l),
             )
@@ -128,8 +139,8 @@ class FFCResBlock(nn.Module):
         self.act = _act()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        xl = x[:, : self.l]    # local channels
-        xg = x[:, self.l :]    # global channels
+        xl = x[:, : self.l]  # local channels
+        xg = x[:, self.l :]  # global channels
 
         # Local
         if self.l > 0:
@@ -145,6 +156,7 @@ class FFCResBlock(nn.Module):
 # ==========================================================================
 # Attention Gate
 # ==========================================================================
+
 
 class AttentionGate(nn.Module):
     """
@@ -163,16 +175,16 @@ class AttentionGate(nn.Module):
         super().__init__()
         self.W_g = nn.Sequential(
             nn.Conv2d(F_g, F_int, kernel_size=1, stride=1, padding=0, bias=True),
-            nn.InstanceNorm2d(F_int)
+            nn.InstanceNorm2d(F_int),
         )
         self.W_x = nn.Sequential(
             nn.Conv2d(F_l, F_int, kernel_size=1, stride=1, padding=0, bias=True),
-            nn.InstanceNorm2d(F_int)
+            nn.InstanceNorm2d(F_int),
         )
         self.psi = nn.Sequential(
             nn.Conv2d(F_int, 1, kernel_size=1, stride=1, padding=0, bias=True),
             nn.InstanceNorm2d(1),
-            nn.Sigmoid()
+            nn.Sigmoid(),
         )
         self.relu = nn.ReLU(inplace=True)
 
@@ -187,6 +199,7 @@ class AttentionGate(nn.Module):
 # ==========================================================================
 # Generator (U-Net with FFC bottleneck)
 # ==========================================================================
+
 
 class Generator(nn.Module):
     """
@@ -214,32 +227,36 @@ class Generator(nn.Module):
         # enc2 : base_ch → base_ch*2 dilation 2 (stride 2 for downsampling)
         # enc3 : base_ch*2 → base_ch*4 dilation 4 (stride 2)
         # enc4 : base_ch*4 → base_ch*8 dilation 2 (stride 2)
-        self.enc1 = ConvBnAct(4,            base_ch,   dilation=1)
-        self.enc2 = ConvBnAct(base_ch,      base_ch*2, dilation=2, stride=2)
-        self.enc3 = ConvBnAct(base_ch*2,    base_ch*4, dilation=4, stride=2)
-        self.enc4 = ConvBnAct(base_ch*4,    base_ch*8, dilation=2, stride=2)
+        self.enc1 = ConvBnAct(4, base_ch, dilation=1)
+        self.enc2 = ConvBnAct(base_ch, base_ch * 2, dilation=2, stride=2)
+        self.enc3 = ConvBnAct(base_ch * 2, base_ch * 4, dilation=4, stride=2)
+        self.enc4 = ConvBnAct(base_ch * 4, base_ch * 8, dilation=2, stride=2)
 
         # ------------------------------------------------------------------ Bottleneck (FFC)
         self.bottleneck = nn.Sequential(
-            *[FFCResBlock(base_ch*8) for _ in range(n_ffc)]
+            *[FFCResBlock(base_ch * 8) for _ in range(n_ffc)]
         )
 
         # ------------------------------------------------------------------ Decoder
         # Each decoder block: bilinear 2× upsample → conv
         # Skip connections from encoder (channel concat) → adjust in_ch
-        self.dec4 = ConvBnAct(base_ch*8 + base_ch*4, base_ch*4)
-        self.dec3 = ConvBnAct(base_ch*4 + base_ch*2, base_ch*2)
-        self.dec2 = ConvBnAct(base_ch*2 + base_ch,   base_ch)
+        self.dec4 = ConvBnAct(base_ch * 8 + base_ch * 4, base_ch * 4)
+        self.dec3 = ConvBnAct(base_ch * 4 + base_ch * 2, base_ch * 2)
+        self.dec2 = ConvBnAct(base_ch * 2 + base_ch, base_ch)
         self.dec1 = nn.Sequential(
             nn.Conv2d(base_ch, 3, kernel_size=3, padding=1, padding_mode="reflect"),
-            nn.Tanh(),   # output in [-1, 1]; we rescale to [0,1] in forward()
+            nn.Tanh(),  # output in [-1, 1]; we rescale to [0,1] in forward()
         )
 
         # ------------------------------------------------------------------ Attention Gates
         if self.use_attention:
-            self.attn4 = AttentionGate(F_g=base_ch*8, F_l=base_ch*4, F_int=base_ch*4)
-            self.attn3 = AttentionGate(F_g=base_ch*4, F_l=base_ch*2, F_int=base_ch*2)
-            self.attn2 = AttentionGate(F_g=base_ch*2, F_l=base_ch,   F_int=base_ch)
+            self.attn4 = AttentionGate(
+                F_g=base_ch * 8, F_l=base_ch * 4, F_int=base_ch * 4
+            )
+            self.attn3 = AttentionGate(
+                F_g=base_ch * 4, F_l=base_ch * 2, F_int=base_ch * 2
+            )
+            self.attn2 = AttentionGate(F_g=base_ch * 2, F_l=base_ch, F_int=base_ch)
 
         self._init_weights()
 
@@ -258,7 +275,9 @@ class Generator(nn.Module):
     @staticmethod
     def _up(x: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         """Bilinear upsample x to match target's spatial size."""
-        return F.interpolate(x, size=target.shape[2:], mode="bilinear", align_corners=False)
+        return F.interpolate(
+            x, size=target.shape[2:], mode="bilinear", align_corners=False
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -269,13 +288,13 @@ class Generator(nn.Module):
         (B, 3, H, W) restored image in [0, 1]
         """
         # Encoder
-        e1 = self.enc1(x)                        # (B, 64,   H,   W)
-        e2 = self.enc2(e1)                       # (B, 128,  H/2, W/2)
-        e3 = self.enc3(e2)                       # (B, 256,  H/4, W/4)
-        e4 = self.enc4(e3)                       # (B, 512,  H/8, W/8)
+        e1 = self.enc1(x)  # (B, 64,   H,   W)
+        e2 = self.enc2(e1)  # (B, 128,  H/2, W/2)
+        e3 = self.enc3(e2)  # (B, 256,  H/4, W/4)
+        e4 = self.enc4(e3)  # (B, 512,  H/8, W/8)
 
         # Bottleneck
-        b  = self.bottleneck(e4)                 # (B, 512,  H/8, W/8)
+        b = self.bottleneck(e4)  # (B, 512,  H/8, W/8)
 
         # Decoder with skip connections (optionally gated with Attention)
         b_up = self._up(b, e3)
@@ -298,8 +317,8 @@ class Generator(nn.Module):
         else:
             e1_gate = e1
         d2 = self.dec2(torch.cat([d3_up, e1_gate], dim=1))
-        
-        out = self.dec1(d2)                      # (B, 3, H, W)  in [-1, 1]
+
+        out = self.dec1(d2)  # (B, 3, H, W)  in [-1, 1]
 
         # Re-scale from [-1, 1] to [0, 1]
         return (out + 1.0) / 2.0
@@ -308,6 +327,7 @@ class Generator(nn.Module):
 # ==========================================================================
 # Discriminator (PatchGAN, ~70×70 receptive field)
 # ==========================================================================
+
 
 class PatchDiscriminator(nn.Module):
     """
@@ -323,21 +343,20 @@ class PatchDiscriminator(nn.Module):
             # Layer 1: 4 → 64,   stride 2  (no norm)
             nn.Conv2d(4, base_ch, 4, stride=2, padding=1),
             _act(),
-
             # Layer 2: 64 → 128,  stride 2
-            nn.Conv2d(base_ch, base_ch*2, 4, stride=2, padding=1),
-            _norm(base_ch*2), _act(),
-
+            nn.Conv2d(base_ch, base_ch * 2, 4, stride=2, padding=1),
+            _norm(base_ch * 2),
+            _act(),
             # Layer 3: 128 → 256,  stride 2
-            nn.Conv2d(base_ch*2, base_ch*4, 4, stride=2, padding=1),
-            _norm(base_ch*4), _act(),
-
+            nn.Conv2d(base_ch * 2, base_ch * 4, 4, stride=2, padding=1),
+            _norm(base_ch * 4),
+            _act(),
             # Layer 4: 256 → 512,  stride 1
-            nn.Conv2d(base_ch*4, base_ch*8, 4, stride=1, padding=1),
-            _norm(base_ch*8), _act(),
-
+            nn.Conv2d(base_ch * 4, base_ch * 8, 4, stride=1, padding=1),
+            _norm(base_ch * 8),
+            _act(),
             # Output: 512 → 1,  stride 1 (patch logits)
-            nn.Conv2d(base_ch*8, 1, 4, stride=1, padding=1),
+            nn.Conv2d(base_ch * 8, 1, 4, stride=1, padding=1),
         )
         self._init_weights()
 
@@ -357,7 +376,7 @@ class PatchDiscriminator(nn.Module):
         Returns:
         (B, 1, Ph, Pw) patch logits (no sigmoid — used with hinge loss)
         """
-        x = torch.cat([img, mask], dim=1)   # (B, 4, H, W)
+        x = torch.cat([img, mask], dim=1)  # (B, 4, H, W)
         return self.net(x)
 
 
@@ -390,13 +409,15 @@ class FolkArtInpaintDataset(Dataset):
     augment: apply random h-flip augmentation (train only)
     """
 
-    def __init__(self, root: str, split: str = "train", size: int = 256, augment: bool = False):
+    def __init__(
+        self, root: str, split: str = "train", size: int = 256, augment: bool = False
+    ):
         super().__init__()
         root = Path(root)
-        self.clean_dir   = root / "clean"   / split
+        self.clean_dir = root / "clean" / split
         self.damaged_dir = root / "damaged" / split
-        self.mask_dir    = root / "masks"   / split
-        self.size    = size
+        self.mask_dir = root / "masks" / split
+        self.size = size
         self.augment = augment
 
         if not self.clean_dir.exists():
@@ -406,14 +427,18 @@ class FolkArtInpaintDataset(Dataset):
         if not self.filenames:
             raise FileNotFoundError(f"No .png files in {self.clean_dir}")
 
-        self.img_tf = T.Compose([
-            T.Resize((size, size), interpolation=T.InterpolationMode.LANCZOS),
-            T.ToTensor(),
-        ])
-        self.mask_tf = T.Compose([
-            T.Resize((size, size), interpolation=T.InterpolationMode.NEAREST),
-            T.ToTensor(),
-        ])
+        self.img_tf = T.Compose(
+            [
+                T.Resize((size, size), interpolation=T.InterpolationMode.LANCZOS),
+                T.ToTensor(),
+            ]
+        )
+        self.mask_tf = T.Compose(
+            [
+                T.Resize((size, size), interpolation=T.InterpolationMode.NEAREST),
+                T.ToTensor(),
+            ]
+        )
 
     def __len__(self):
         return len(self.filenames)
@@ -421,7 +446,7 @@ class FolkArtInpaintDataset(Dataset):
     def __getitem__(self, idx: int) -> dict:
         fname = self.filenames[idx]
 
-        clean   = Image.open(self.clean_dir   / fname).convert("RGB")
+        clean = Image.open(self.clean_dir / fname).convert("RGB")
         damaged = Image.open(self.damaged_dir / fname).convert("RGB")
 
         # Mask may be stored as grayscale
@@ -434,20 +459,20 @@ class FolkArtInpaintDataset(Dataset):
 
         # Random horizontal flip augmentation
         if self.augment and torch.rand(1).item() > 0.5:
-            clean   = clean.transpose(Image.FLIP_LEFT_RIGHT)
+            clean = clean.transpose(Image.FLIP_LEFT_RIGHT)
             damaged = damaged.transpose(Image.FLIP_LEFT_RIGHT)
-            mask    = mask.transpose(Image.FLIP_LEFT_RIGHT)
+            mask = mask.transpose(Image.FLIP_LEFT_RIGHT)
 
         # Random 90/180/270-degree rotation augmentation (safe for pixel grid alignment)
         if self.augment and torch.rand(1).item() > 0.5:
             rot = random.choice([Image.ROTATE_90, Image.ROTATE_180, Image.ROTATE_270])
-            clean   = clean.transpose(rot)
+            clean = clean.transpose(rot)
             damaged = damaged.transpose(rot)
-            mask    = mask.transpose(rot)
+            mask = mask.transpose(rot)
 
-        c = self.img_tf(clean)             # (3, H, W) [0,1]
-        d = self.img_tf(damaged)           # (3, H, W)
-        m = self.mask_tf(mask)             # (1, H, W) {0,1}
-        m = (m > 0.5).float()             # binarise
+        c = self.img_tf(clean)  # (3, H, W) [0,1]
+        d = self.img_tf(damaged)  # (3, H, W)
+        m = self.mask_tf(mask)  # (1, H, W) {0,1}
+        m = (m > 0.5).float()  # binarise
 
         return {"clean": c, "damaged": d, "mask": m, "filename": fname}

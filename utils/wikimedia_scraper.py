@@ -78,6 +78,7 @@ TEST_RATIO = 0.1
 # Helper utilities
 # ---------------------------------------------------------------------------
 
+
 def make_dir(path: pathlib.Path) -> None:
     """Create a clean directory – remove existing files if any."""
     if path.exists():
@@ -101,16 +102,20 @@ def generate_splits(image_paths: List[pathlib.Path]) -> Dict[str, List[str]]:
     n_train = int(total * TRAIN_RATIO)
     n_val = int(total * VAL_RATIO)
     train = image_paths[:n_train]
-    val = image_paths[n_train:n_train + n_val]
-    test = image_paths[n_train + n_val:]
+    val = image_paths[n_train : n_train + n_val]
+    test = image_paths[n_train + n_val :]
     rel = lambda p: str(p.relative_to(pathlib.Path.cwd()))
-    return {"train": [rel(p) for p in train],
-            "val":   [rel(p) for p in val],
-            "test":  [rel(p) for p in test]}
+    return {
+        "train": [rel(p) for p in train],
+        "val": [rel(p) for p in val],
+        "test": [rel(p) for p in test],
+    }
+
 
 # ---------------------------------------------------------------------------
 # Main execution
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     print("Downloading fixed set of folk‑art images…")
@@ -135,6 +140,7 @@ def main() -> None:
     with open(splits_path, "w", encoding="utf-8") as f:
         json.dump(splits, f, indent=2)
     print(f"\nGenerated splits.json at {splits_path}")
+
 
 if __name__ == "__main__":
     main()
