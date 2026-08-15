@@ -7,7 +7,6 @@
   <img src="https://img.shields.io/github/last-commit/givemehat/folk-art-restoration?style=for-the-badge&color=red" alt="Last Commit" />
 </div>
 
-
 Folk Art Image Restoration using Deep Learning.
 
 ## Description
