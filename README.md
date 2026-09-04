@@ -14,3 +14,4 @@ A deep learning project focused on restoring folk art images. It utilizes EDSR a
 
 ## Setup
 Refer to the codebase for specific setup instructions.
+I have to update all this as of 2026.
