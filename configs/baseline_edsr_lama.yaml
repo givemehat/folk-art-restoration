@@ -1,0 +1,18 @@
+super_resolution:
+  name: edsr
+  scale: 2
+
+inpainting:
+  name: lama
+  use_attention: true
+
+training:
+  batch_size: 16
+  learning_rate: 0.0002
+  epochs: 1
+  mixed_precision: true
+  early_stopping_patience: 10
+  losses:
+    reconstruction_weight: 1.0
+    perceptual_weight: 0.1
+    adversarial_weight: 0.05

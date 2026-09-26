@@ -12,7 +12,8 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
 # Add workspace root to python path to run local package imports
-workspace_root = "/Users/rajnishsingh/Downloads/files (3)"
+import os
+workspace_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if workspace_root not in sys.path:
     sys.path.insert(0, workspace_root)
 
@@ -183,7 +184,7 @@ def main():
     ax.annotate("", xy=(6.2, 3.0), xytext=(7.4, 4.8), arrowprops=arrow_style)
 
     # Save image
-    output_dir = "/Users/rajnishsingh/Downloads/files (3)/paper_visuals"
+    output_dir = os.path.join(workspace_root, "paper_visuals")
     os.makedirs(output_dir, exist_ok=True)
     save_path = os.path.join(output_dir, "pipeline_flowchart.png")
     plt.savefig(save_path, dpi=300, bbox_inches="tight")
