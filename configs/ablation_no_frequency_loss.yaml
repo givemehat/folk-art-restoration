@@ -1,0 +1,26 @@
+# ==============================================================================
+# Architecture Configuration: Ablation - Without Frequency Domain Loss
+# Isolates the contribution of Fourier Spectral Loss on line stroke reconstruction.
+# ==============================================================================
+
+super_resolution:
+  name: edsr
+  scale: 2
+  num_blocks: 16
+
+inpainting:
+  name: lama
+  base_ch: 64
+  n_ffc: 4
+  use_attention: true
+
+training:
+  batch_size: 8
+  learning_rate: 0.0002
+  epochs: 25
+  early_stopping_patience: 10
+  losses:
+    reconstruction_weight: 1.0
+    perceptual_weight: 0.1
+    frequency_weight: 0.0   # Disabled to assess impact on high-frequency line art
+    adversarial_weight: 0.05

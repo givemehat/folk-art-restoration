@@ -33,8 +33,10 @@ def profile_model(model, input_size=(1, 3, 256, 256), device="cpu"):
         for _ in range(50):
             _ = model(dummy_input)
         
-        if torch.cuda.is_available() and device != "cpu":
+        if torch.cuda.is_available() and str(device).startswith("cuda"):
             torch.cuda.synchronize()
+        elif hasattr(torch, "mps") and str(device).startswith("mps"):
+            torch.mps.synchronize()
             
         end_time = time.time()
         avg_time_ms = ((end_time - start_time) / 50) * 1000

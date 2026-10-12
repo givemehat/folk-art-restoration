@@ -1,0 +1,24 @@
+# ==============================================================================
+# Architecture Configuration: Ablation Baseline - Vanilla Spatial U-Net
+# Tests whether Fast Fourier Convolutions (FFC) are necessary for folk art.
+# ==============================================================================
+
+super_resolution:
+  name: edsr
+  scale: 2
+  num_blocks: 16
+
+inpainting:
+  name: unet
+  base_ch: 64
+
+training:
+  batch_size: 8
+  learning_rate: 0.0002
+  epochs: 25
+  early_stopping_patience: 10
+  losses:
+    reconstruction_weight: 1.0
+    perceptual_weight: 0.1
+    frequency_weight: 0.0
+    adversarial_weight: 0.0

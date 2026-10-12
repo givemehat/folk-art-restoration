@@ -1,0 +1,42 @@
+{
+  "OpenCV TELEA": {
+    "psnr_mean": 24.18059515709543,
+    "psnr_std": 5.2426016682729335,
+    "ssim_mean": 0.9102193166606976,
+    "ssim_std": 0.05864218098335152,
+    "lpips_mean": null,
+    "lpips_std": null,
+    "frechet_distance": 0.002585155868890819,
+    "sharpness_laplacian": 7512.119940958975
+  },
+  "Vanilla Spatial U-Net": {
+    "psnr_mean": 9.225404229605589,
+    "psnr_std": 0.9201236230933594,
+    "ssim_mean": 0.12883533972556063,
+    "ssim_std": 0.035640409173681435,
+    "lpips_mean": null,
+    "lpips_std": null,
+    "frechet_distance": 0.14985687258295208,
+    "sharpness_laplacian": 1335.154361151508
+  },
+  "Spectral Inpainting (LaMa)": {
+    "psnr_mean": 8.046342003932388,
+    "psnr_std": 0.7171481975798298,
+    "ssim_mean": 0.05359869080182006,
+    "ssim_std": 0.037328102775746184,
+    "lpips_mean": null,
+    "lpips_std": null,
+    "frechet_distance": 0.03301216683954457,
+    "sharpness_laplacian": 1545.0028618505457
+  },
+  "Dual-Stage (EDSR + LaMa) [Ours]": {
+    "psnr_mean": 8.54358507519921,
+    "psnr_std": 1.1451207011426796,
+    "ssim_mean": 0.05422489871168681,
+    "ssim_std": 0.014445302673723135,
+    "lpips_mean": null,
+    "lpips_std": null,
+    "frechet_distance": 0.03208875234646412,
+    "sharpness_laplacian": 2895.5800791479414
+  }
+}

@@ -1,26 +1,31 @@
 #!/bin/bash
+set -e
 
-# Folk Art Restoration Ablation Study Runner
-# Executes training across different modes to study individual component contributions.
+# ==============================================================================
+# Empirical Ablation Study Execution Pipeline
+# Generates model checkpoints across all comparative variants for the paper.
+# ==============================================================================
 
-CONFIG="configs/baseline_edsr_lama.yaml"
-DATA_ROOT="data/sample"
-SAVE_DIR="results/ablations"
+DATA_ROOT="data/full/processed"
+SAVE_DIR="checkpoints/ablation"
 
-echo "========================================="
-echo "Starting Ablation Study for Paper Results"
-echo "========================================="
+echo "=================================================================="
+echo " Folk Art Restoration: Scientific Ablation Study Execution"
+echo "=================================================================="
 
-echo "[1/3] Training SR Only (EDSR Baseline)..."
-python train.py --config $CONFIG --data_root $DATA_ROOT --save_dir $SAVE_DIR --mode sr
+echo "[1/4] Variant A: Super-Resolution Only (EDSR Baseline)..."
+python train.py --config configs/proposed_dual_stage.yaml --data_root $DATA_ROOT --save_dir $SAVE_DIR --mode sr --epochs 10
 
-echo "[2/3] Training Inpaint Only (LaMa Baseline)..."
-python train.py --config $CONFIG --data_root $DATA_ROOT --save_dir $SAVE_DIR --mode inpaint
+echo "[2/4] Variant B: Inpainting Only (Spectral LaMa Baseline)..."
+python train.py --config configs/proposed_dual_stage.yaml --data_root $DATA_ROOT --save_dir $SAVE_DIR --mode inpaint --epochs 10
 
-echo "[3/3] Training Joint Pipeline (EDSR + LaMa)..."
-python train.py --config $CONFIG --data_root $DATA_ROOT --save_dir $SAVE_DIR --mode joint
+echo "[3/4] Variant C: Vanilla Spatial U-Net (Ablation: No Spectral Blocks)..."
+python train.py --config configs/ablation_spatial_unet.yaml --data_root $DATA_ROOT --save_dir $SAVE_DIR --mode inpaint --epochs 10
 
-echo "========================================="
-echo "Ablation Study Complete."
-echo "Models saved in $SAVE_DIR"
-echo "========================================="
+echo "[4/4] Proposed: Dual-Stage Framework (Joint EDSR + Spectral LaMa)..."
+python train.py --config configs/proposed_dual_stage.yaml --data_root $DATA_ROOT --save_dir $SAVE_DIR --mode joint --epochs 10
+
+echo "=================================================================="
+echo " Ablation Study Finished Successfully."
+echo " Checkpoints preserved in $SAVE_DIR"
+echo "=================================================================="

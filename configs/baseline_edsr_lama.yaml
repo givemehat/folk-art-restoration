@@ -9,8 +9,8 @@ inpainting:
 training:
   batch_size: 16
   learning_rate: 0.0002
-  epochs: 1
-  mixed_precision: true
+  epochs: 25
+  mixed_precision: false
   early_stopping_patience: 10
   losses:
     reconstruction_weight: 1.0
